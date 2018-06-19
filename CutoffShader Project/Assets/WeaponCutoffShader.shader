@@ -3,27 +3,19 @@
 	Properties
 	{
 		[Header(Texture 1)]
-		Texture1("Texture", 2D) = "white" {}
-		Color1("Tint", Color) = (1,1,1,1)
-		Glossiness1("Smoothness", Range(0,1)) = 0.5
-		Metallic1("Metallic", Range(0,1)) = 0.0
+		_Texture("Texture", 2D) = "white" {}
+		_texColor("Tint", Color) = (1,1,1,1)
+		_NormalMap("Normal Map", 2D) = "bump" {}
+		_MetallicMap("Metallic Texture", 2D) = "white" {}
+		_Metallic("Metallic", Range(0,1)) = 0.0
+		_Smoothness("Smoothness", Range(0,1)) = 0.5
 
 		[Header(Transition Texture)]
-		TransitionTexture("Texture" , 2D) = "white" {}
-		TransitionColor("Transition Color", Color) = (1,1,1,1)
-		TransitionEmission("Transition Emission", Range(0,1)) = 1
-		TransitionScale("Transition Scale", Float) = 1
-		TransitionOffset("Transition Offset", Vector) = (0,0,0,0)
-
-		[Header(Texture 2)]
-		Texture2("Texture", 2D) = "white" {}
-		Color2("Tint", Color) = (1,1,1,1)
-		Glossiness2("Smoothness", Range(0,1)) = 0.5
-		Metallic2("Metallic", Range(0,1)) = 0.0
+		_TransitionTexture("Texture" , 2D) = "white" {}
 
 		[Space(20)]
 
-		DissolveAmount("Dissolve Amount", Range(0,1)) = 1
+		_DissolveAmount("Dissolve Amount", Range(-2,2)) = 0
 	}
 
 		SubShader
@@ -40,47 +32,48 @@
 
 #pragma target 3.0
 
-		float4 Color1;
-	sampler2D Texture1;
+		float4 _texColor;
+		sampler2D _Texture, _NormalMap, _MetallicMap;
 
-	half Glossiness1;
-	half Metallic1;
+		half _Smoothness;
+		half _Metallic;
 
-	sampler2D TransitionTexture;
-	float TransitionScale;
+		sampler2D _TransitionTexture;
+		float _TransitionScale;
 
-	float4 TransitionOffset;
+		float4 _TransitionOffset;
 
-	float DissolveAmount;
+		float _DissolveAmount;
 
-	struct Input
-	{
-		float2 uvTexture1;
-		float3 localPos;
-	};
+		struct Input
+		{
+			float2 uv_Texture;
+			float2 uv_NormalMap;
+			float2 uv_MetallicMap;
+			float3 localPos;
+		};
 
-	void vert(inout appdata_full v, out Input o)
-	{
-		UNITY_INITIALIZE_OUTPUT(Input,o);
-		o.localPos = v.vertex.xyz + ((float3(0.5,0.5,0) * TransitionScale) + TransitionOffset.xyz);
+		void vert(inout appdata_full v, out Input o)
+		{
+			UNITY_INITIALIZE_OUTPUT(Input,o);
+			o.localPos = v.vertex.xyz + ((float3(1,0,0) * _TransitionScale) + _DissolveAmount);
+		}
+
+		void surf(Input IN, inout SurfaceOutputStandard o)
+		{
+			clip(IN.localPos.x + 0.01);
+
+			half4 c = tex2D(_Texture, IN.uv_Texture) * _texColor;
+			o.Albedo = c.rgb;
+			
+			o.Normal = UnpackNormal(tex2D(_NormalMap, IN.uv_NormalMap));
+
+			half4 m = tex2D(_MetallicMap, IN.uv_MetallicMap) * _Metallic;
+			o.Metallic = _Metallic;
+			
+			o.Smoothness = _Smoothness;
+		}
+		ENDCG 
 	}
-
-	void surf(Input IN, inout SurfaceOutputStandard o)
-	{
-		float3 localPosUV = IN.localPos;
-		localPosUV /= TransitionScale;
-		half4 dissolveColor = tex2D(TransitionTexture, localPosUV);
-
-		clip(dissolveColor.rgb - DissolveAmount);
-
-		half4 c1 = tex2D(Texture1, IN.uvTexture1) * Color1;
-		o.Albedo = c1.rgb;
-		o.Metallic = Metallic1;
-		o.Smoothness = Glossiness1;
-		o.Alpha = c1.a;
-	}
-
-	ENDCG 
-	}
-		//FallBack "Diffuse"
+	FallBack "Diffuse"
 }
