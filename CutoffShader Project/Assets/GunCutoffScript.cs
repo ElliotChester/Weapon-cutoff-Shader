@@ -5,10 +5,12 @@ using UnityEngine;
 public class GunCutoffScript : MonoBehaviour {
 
 	public Transform rayOrigin;
-	public float fullModel;
-	public float noModel;
+    [Range (-2, 2)]
+	public float fullModelDissolveAmt = 1;
+    [Range (-2, 2)]
+	public float noModelDissolveAmt = -1;
 
-	public float cutoffPoint;
+	float cutoffPoint;
 	public LayerMask cutoffLayers;
 	
 	Material thisMaterial;
@@ -20,7 +22,7 @@ public class GunCutoffScript : MonoBehaviour {
 
 	void Update () 
 	{
-		float differenceBetweenPoints = noModel - fullModel;
+		float differenceBetweenPoints = noModelDissolveAmt - fullModelDissolveAmt;
 		float gunLength = differenceBetweenPoints;
 		if(gunLength < 0){
 			gunLength *= -1;
@@ -35,11 +37,11 @@ public class GunCutoffScript : MonoBehaviour {
 		{
 			Debug.Log("Hit a Wall");
 			float distanceToCutoff = Vector3.Distance(rayOrigin.position, hit.point);
-			cutoffPoint = fullModel - (gunLength - distanceToCutoff);
+			cutoffPoint = fullModelDissolveAmt - (gunLength - distanceToCutoff);
 		}
 		else
 		{
-			cutoffPoint = fullModel;
+			cutoffPoint = fullModelDissolveAmt;
 		}
 
 		thisMaterial.SetFloat("_DissolveAmount", cutoffPoint);
